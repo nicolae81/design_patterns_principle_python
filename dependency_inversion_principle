@@ -1,0 +1,112 @@
+from abc import ABC, abstractmethod
+
+
+class Order:
+    items = []
+    quantities = []
+    prices = []
+    status = "open"
+
+    def add_item(self, name, quantity, price):
+        self.items.append(name)
+        self.quantities.append(quantity)
+        self.prices.append(price)
+
+    def total_price(self):
+        total = 0
+        for i in range(len(self.prices)):
+            total += self.quantities[i] * self.prices[i]
+        return total
+
+
+class PaymentProcessor(ABC):
+    @abstractmethod
+    def pay(self, order):
+        pass
+
+
+class Authorizer(ABC):
+    @abstractmethod
+    def is_authorized(self):
+        pass
+
+
+class VerifyRobot(Authorizer):
+    authorized = False
+
+    def not_robot(self):
+        print(f"Not a Robot")
+        self.authorized = True
+
+    def is_authorized(self) -> bool:
+        return self.authorized
+
+class SmsAuto(Authorizer):
+    authorized = False
+
+    def verify_code(self, cod):
+        print(f"Verifying Code {cod}")
+        self.authorized = True
+
+    def is_authorized(self) -> bool:
+        return self.authorized
+
+
+class DebitPaymentProcessor(PaymentProcessor):
+
+    def __init__(self, security_code, authorizer: Authorizer):
+        self.security_code = security_code
+        self.authorizer = authorizer
+
+    def auto_sms(self, cod):
+        print(f"Cod verificat! {cod}")
+
+
+    def pay(self, order):
+        if not self.authorizer.is_authorized():
+            raise Exception("Cod neverificat!")
+        print('Processing debit payment type')
+        print(f'Verifying security code {self.security_code}')
+        order.status = 'paid'
+
+
+class CreditPaymentProcessor(PaymentProcessor):
+
+    def __init__(self, security_code):
+        self.security_code = security_code
+
+    def pay(self, order):
+        print('Processing credit payment type')
+        print(f'Verifying security code {self.security_code}')
+        order.status = 'paid'
+
+
+class PayPalPaymentProcessor(PaymentProcessor):
+
+    def __init__(self, email_address, authorizer: Authorizer):
+        self.email_address = email_address
+        self.authorizer = authorizer
+
+    def auto_sms(self, cod):
+        print(f"Cod verificat! {cod}")
+
+    def pay(self, order):
+        if not self.authorizer.is_authorized():
+            raise Exception("Cod neverificat!")
+        print('Processing Pay Pal payment type')
+        print(f'Verifying email address: {self.email_address}')
+        order.status = 'paid'
+
+
+order = Order()
+order.add_item("Jeans", 1, 100)
+order.add_item("Shirt", 2, 80)
+print(order.status)
+
+print(order.total_price())
+
+authorizer = VerifyRobot()
+authorizer.not_robot()  #asa se aceseaza elementele dintro clasa
+paypal_processor = PayPalPaymentProcessor("alala@yahoo.com", authorizer)
+paypal_processor.pay(order)
+print(order.status)
