@@ -1,0 +1,96 @@
+from abc import ABC, abstractmethod
+
+
+class Order:
+    items = []
+    quantities = []
+    prices = []
+    status = "open"
+
+    def add_item(self, name, quantity, price):
+        self.items.append(name)
+        self.quantities.append(quantity)
+        self.prices.append(price)
+
+    def total_price(self):
+        total = 0
+        for i in range(len(self.prices)):
+            total += self.quantities[i] * self.prices[i]
+        return total
+
+
+class PaymentProcessor(ABC):
+    @abstractmethod
+    def pay(self, order):
+        pass
+
+
+class PaymentProcessorSms(PaymentProcessor):
+    @abstractmethod
+    def auto_sms(self, cod):
+        pass
+
+
+class DebitPaymentProcessor(PaymentProcessorSms):
+
+    def __init__(self, security_code):
+        self.security_code = security_code
+        self.verified = False
+
+    def auto_sms(self, cod):
+        print(f"Cod verificat! {cod}")
+        self.verified = True
+
+    def pay(self, order):
+        if not self.verified:
+            raise Exception("Cod neverificat!")
+        print('Processing debit payment type')
+        print(f'Verifying security code {self.security_code}')
+        order.status = 'paid'
+
+
+class CreditPaymentProcessor(PaymentProcessor):
+
+    def __init__(self, security_code):
+        self.security_code = security_code
+
+    def pay(self, order):
+        print('Processing credit payment type')
+        print(f'Verifying security code {self.security_code}')
+        order.status = 'paid'
+
+
+class PayPalPaymentProcessor(PaymentProcessorSms):
+
+    def __init__(self, email_address):
+        self.email_address = email_address
+        self.verified = False
+
+    def auto_sms(self, cod):
+        print(f"Cod verificat! {cod}")
+        self.verified = True
+
+    def pay(self, order):
+        if not self.verified:
+            raise Exception("Cod neverificat!")
+        print('Processing Pay Pal payment type')
+        print(f'Verifying email address: {self.email_address}')
+        order.status = 'paid'
+
+
+order = Order()
+order.add_item("Jeans", 1, 100)
+order.add_item("Shirt", 2, 80)
+print(order.status)
+
+print(order.total_price())
+
+processor = DebitPaymentProcessor("123456")
+processor.auto_sms("45687")
+processor.pay(order)
+print(order.status)
+
+p = PayPalPaymentProcessor("bchisu@gmail.com")
+p.auto_sms("68873")
+p.pay(order)
+print(order.status)
